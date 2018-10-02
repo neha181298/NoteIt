@@ -73,6 +73,7 @@ public class LoginActivity extends AppCompatActivity {
                         if (task.isSuccessful()) {
 
                             Intent mainIntent = new Intent(LoginActivity.this, MainActivity.class);
+                            mainIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);// clear back stack
                             startActivity(mainIntent);
                             finish();
 

@@ -7,13 +7,31 @@
     android:layout_height="match_parent" >
 
 
+    <ScrollView
+        android:id="@+id/imagescrollview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/colorNoteDefault"
+        android:layout_above="@+id/bottom_toolbar"
+        >
+
     <LinearLayout
         android:id="@+id/simple_note_creation_linear_layout"
         android:background="@color/colorNoteDefault"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/bottom_toolbar"
-        android:orientation="vertical">
+
+        android:orientation="vertical"
+        >
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/imageView"
+            android:paddingTop="5dp"
+            android:paddingStart="5dp"
+
+            />
 
         <EditText
             android:paddingTop="8dp"
@@ -46,7 +64,11 @@
             android:scrollbars="vertical"
             tools:ignore="RtlHardcoded,RtlSymmetry" />
 
+
     </LinearLayout>
+    </ScrollView>
+
+
 
     <View
         android:id="@+id/test"
@@ -68,6 +90,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Create"
+            android:background="@color/colorNoteDefault"
             />
 
 
@@ -210,6 +233,8 @@
 
         </HorizontalScrollView>
 
+
+
     </LinearLayout>
 
     <View
@@ -234,11 +259,11 @@
             tools:ignore="UselessParent">
 
             <ImageButton
-                android:id="@+id/note_types_button"
+                android:id="@+id/note_share_button"
                 android:layout_width="50dp"
                 android:layout_height="match_parent"
                 android:background="?android:attr/selectableItemBackground"
-                android:src="@drawable/ic_icon_plus"
+                android:src="@drawable/ic_menu_share"
                 android:contentDescription="@string/note_types" />
 
             <TextView

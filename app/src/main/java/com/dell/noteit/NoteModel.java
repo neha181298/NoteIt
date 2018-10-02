@@ -3,20 +3,22 @@ package com.dell.noteit;
 import java.util.HashMap;
 import java.util.Map;
 
-public class NoteModel {
-    String mTitle,mContent,mColor;
-    int mImage;
-    Map<String, String> mTime;
+/*public class NoteModel {
+    String mTitle,mContent;
+    //String mColor;
+    //int mImage;
+    String mTime;
 
     NoteModel()
     {
-        mImage = -1;
+
     }
 
-    public NoteModel(String mTitle, String mContent, String mColor) {
+    public NoteModel(String mTitle, String mContent, String mTime) {
         this.mTitle = mTitle;
         this.mContent = mContent;
-        this.mColor = mColor;
+        this.mTime = mTime;
+        //this.mColor = mColor;
     }
 
     public String getmTitle() {
@@ -51,11 +53,61 @@ public class NoteModel {
         this.mImage = mImage;
     }
 
-    public Map<String, String>  getmTime() {
+    public String getmTime() {
         return mTime;
     }
 
-    public void setmTime(Map<String, String> mTime) {
+    public void setmTime(String mTime) {
         this.mTime = mTime;
     }
+}*/
+
+public class NoteModel {
+
+    public String noteTitle;
+    public String noteTime;
+    public  String noteContent;
+    public String noteColor;
+
+    public NoteModel() {
+
+    }
+
+    public NoteModel(String noteTitle,String noteContent, String noteTime,String noteColor) {
+        this.noteTitle = noteTitle;
+        this.noteTime = noteTime;
+        //this.noteColor=noteColor;
+        this.noteContent=noteContent;
+    }
+
+   /* public String getNoteColor(){return noteColor;}
+
+    public void  setNoteColor(String noteColor){this.noteColor=noteColor;}*/
+
+
+    public String getNoteTitle() {
+        return noteTitle;
+    }
+
+    public void setNoteTitle(String noteTitle) {
+        this.noteTitle = noteTitle;
+    }
+
+    public String getNoteContent() {
+        return noteContent;
+    }
+
+    public void setNoteContent(String noteContent) {
+        this.noteContent = noteContent;
+    }
+
+
+    public String getNoteTime() {
+        return noteTime;
+    }
+
+    public void setNoteTime(String noteTime) {
+        this.noteTime = noteTime;
+    }
 }
+

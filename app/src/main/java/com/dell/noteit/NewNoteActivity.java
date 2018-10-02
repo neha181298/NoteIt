@@ -4,30 +4,47 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioGroup;
+import android.widget.ScrollView;
 import android.widget.TableLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ServerValue;
+import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.ml.vision.FirebaseVision;
+import com.google.firebase.ml.vision.common.FirebaseVisionImage;
+import com.google.firebase.ml.vision.text.FirebaseVisionText;
+import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class NewNoteActivity extends AppCompatActivity {
@@ -41,18 +58,33 @@ public class NewNoteActivity extends AppCompatActivity {
     String noteColor,color;
     LinearLayout noteLayout, noteActionsLayout;
     android.support.v7.app.ActionBar    actionBar;
-
-    ImageButton noteActionsButton;
+    TextView lastModificationDate;
+    ImageButton noteActionsButton,noteShareButton;
+    ImageView imageView;
+    Uri imageUri=null;
+    ScrollView scrollView;
+    String mRecognizedText,voiceNoteText=null;
 
 
     private String noteID;
 
-    private boolean isExist;
+    private boolean isExist,isImage,isVoice;
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu(menu);
+        getMenuInflater().inflate(R.menu.new_note_menu, menu);
+        return true;
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_newnote);
+
+
+
         actionBar = getSupportActionBar();
         eTitle = findViewById(R.id.title_edit_text);
         eContent = findViewById(R.id.content_edit_text);
@@ -61,9 +93,13 @@ public class NewNoteActivity extends AppCompatActivity {
         colorPickerRadioGroup = findViewById(R.id.color_picker_radio_group);
         noteLayout = findViewById(R.id.simple_note_creation_linear_layout);
         noteActionsLayout = findViewById(R.id.note_actions_layout);
-
+        lastModificationDate = findViewById(R.id.last_modification_date);
+        imageView = findViewById(R.id.imageView);
+        scrollView = findViewById(R.id.imagescrollview);
+        noteShareButton = findViewById(R.id.note_share_button);
 
         noteActionsButton = findViewById(R.id.note_actions_button);
+        noteColor = "#FAFAFA";
 
 
 
@@ -76,6 +112,43 @@ public class NewNoteActivity extends AppCompatActivity {
         fNotesDatabase = FirebaseDatabase.getInstance().getReference().child("Notes").child(fAuth.getCurrentUser().getUid());
 
 
+        try {
+            noteID = getIntent().getStringExtra("noteId");
+            imageUri = getIntent().getParcelableExtra("image");
+            voiceNoteText = getIntent().getStringExtra("voiceNote");
+            //Toast.makeText(this, noteID, Toast.LENGTH_SHORT).show();
+
+            if(voiceNoteText != null){
+                isVoice = true;
+                eContent.setText(voiceNoteText);
+            }
+
+            if(imageUri != null) {
+                isImage = true;
+                imageView.setImageURI(imageUri);
+                runTextRecognition();
+            }
+            else {
+                isImage = false;
+            }
+
+            if (!noteID.trim().equals("")) {
+                isExist = true;
+                create.setText("UPDATE");
+                putData();
+
+            } else {
+                isExist = false;
+
+
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+
 
         create.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -84,12 +157,19 @@ public class NewNoteActivity extends AppCompatActivity {
                 String title = eTitle.getText().toString().trim();
                 String content = eContent.getText().toString().trim();
 
-                if (!TextUtils.isEmpty(title) && !TextUtils.isEmpty(content)) {
+                if ( !TextUtils.isEmpty(content)) {
                     createNote(title, content);
                 } else {
                     Snackbar.make(view, "Fill empty fields", Snackbar.LENGTH_SHORT).show();
                 }
 
+            }
+        });
+
+        noteShareButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                shareNote();
             }
         });
 
@@ -111,6 +191,7 @@ public class NewNoteActivity extends AppCompatActivity {
                 }
             }
         });
+
 
 
 
@@ -161,56 +242,111 @@ public class NewNoteActivity extends AppCompatActivity {
                 noteActionsLayout.setBackgroundColor(Color.parseColor(noteColor));
                 bottomToolbar.setBackgroundColor(Color.parseColor(noteColor));
                 actionBar.setBackgroundDrawable(new ColorDrawable(Color.parseColor(noteColor)));
+                scrollView.setBackgroundColor(Color.parseColor(noteColor));
                 getWindow().setStatusBarColor(darkenNoteColor(Color.parseColor(noteColor), 0.7f));
 
                 noteActionsButton.setBackgroundColor(darkenNoteColor(Color.parseColor(noteColor), 0.9f));
             }
         });
+
+
+
     }
 
 
-    private void createNote(String title,String content)
-    {
-        if (fAuth.getCurrentUser() != null) {
+    private void putData() {
 
+        if (isExist) {
+            fNotesDatabase.child(noteID).addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    if (dataSnapshot.hasChild("title") && dataSnapshot.hasChild("content")) {
+                        String title = dataSnapshot.child("title").getValue().toString();
+                        String content = dataSnapshot.child("content").getValue().toString();
+                        String color = dataSnapshot.child("color").getValue().toString();
+                        String time = dataSnapshot.child("time").getValue().toString();
+                        GetTimeAgo getTimeAgo = new GetTimeAgo();
+                        eTitle.setText(title);
+                        noteColor=color;
+                        eContent.setText(content);
+                        lastModificationDate.setText(getTimeAgo.getTimeAgo(Long.parseLong(time), getApplicationContext()));
+                        noteLayout.setBackgroundColor(Color.parseColor(noteColor));
+                        noteActionsLayout.setBackgroundColor(Color.parseColor(noteColor));
+                        bottomToolbar.setBackgroundColor(Color.parseColor(noteColor));
+                        actionBar.setBackgroundDrawable(new ColorDrawable(Color.parseColor(noteColor)));
+                        scrollView.setBackgroundColor(Color.parseColor(noteColor));
+                        getWindow().setStatusBarColor(darkenNoteColor(Color.parseColor(noteColor), 0.7f));
 
-                // CREATE A NEW NOTE
-                final DatabaseReference newNoteRef = fNotesDatabase.push();
+                        noteActionsButton.setBackgroundColor(darkenNoteColor(Color.parseColor(noteColor), 0.9f));
 
-               final NoteModel noteModel= new NoteModel();
-               noteModel.setmTitle(title);
-               noteModel.setmContent(content);
-               noteModel.setmTime(ServerValue.TIMESTAMP);
-            final Map noteMap = new HashMap();
-            noteMap.put("mTitle", title);
-            noteMap.put("mContent", content);
-            noteMap.put("mTime", ServerValue.TIMESTAMP);
-
-                Thread mainThread = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        newNoteRef.setValue(noteMap).addOnCompleteListener(new OnCompleteListener<Void>() {
-                            @Override
-                            public void onComplete(@NonNull Task<Void> task) {
-                                if (task.isSuccessful()) {
-                                    Toast.makeText(NewNoteActivity.this, "Note added to database", Toast.LENGTH_SHORT).show();
-                                } else {
-                                    Toast.makeText(NewNoteActivity.this, "ERROR: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                                }
-
-                            }
-                        });
                     }
-                });
-                mainThread.start();
+                }
 
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
 
-
-
-        } else {
-            Toast.makeText(this, "USERS IS NOT SIGNED IN", Toast.LENGTH_SHORT).show();
+                }
+            });
         }
     }
+
+
+    private void createNote(String title,String content) {
+
+
+            if (fAuth.getCurrentUser() != null) {
+
+                if (isExist) {
+                    // UPDATE A NOTE
+                    Map updateMap = new HashMap();
+                    updateMap.put("title", eTitle.getText().toString().trim());
+                    updateMap.put("content", eContent.getText().toString().trim());
+                    updateMap.put("time", ServerValue.TIMESTAMP);
+                    updateMap.put("color", noteColor);
+
+
+                    fNotesDatabase.child(noteID).updateChildren(updateMap);
+
+                    Toast.makeText(this, "Note updated", Toast.LENGTH_SHORT).show();
+                } else {
+
+                    // CREATE A NEW NOTE
+                    final DatabaseReference newNoteRef = fNotesDatabase.push();
+
+
+                    final Map noteMap = new HashMap();
+                    noteMap.put("title", title);
+                    noteMap.put("content", content);
+                    noteMap.put("time", ServerValue.TIMESTAMP);
+                    noteMap.put("color", noteColor);
+
+
+                    Thread mainThread = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            newNoteRef.setValue(noteMap).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                @Override
+                                public void onComplete(@NonNull Task<Void> task) {
+                                    if (task.isSuccessful()) {
+                                        Toast.makeText(NewNoteActivity.this, "Note added to database", Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        Toast.makeText(NewNoteActivity.this, "ERROR: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                                    }
+
+                                }
+                            });
+                        }
+                    });
+                    mainThread.start();
+
+                }
+
+
+            } else {
+                Toast.makeText(this, "USERS IS NOT SIGNED IN", Toast.LENGTH_SHORT).show();
+            }
+        }
+
 
     public boolean onOptionsItemSelected(MenuItem item) {
         super.onOptionsItemSelected(item);
@@ -218,6 +354,18 @@ public class NewNoteActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             case android.R.id.home:
                 finish();
+                break;
+
+            case R.id.new_note_delete_btn:
+                if (isExist) {
+                    deleteNote();
+                } else {
+                    Toast.makeText(this, "Nothing to delete", Toast.LENGTH_SHORT).show();
+                }
+                break;
+
+            case R.id.note_reminder:
+                createReminder();
                 break;
         }
 
@@ -233,6 +381,99 @@ public class NewNoteActivity extends AppCompatActivity {
                 Math.min(r,255),
                 Math.min(g,255),
                 Math.min(b,255));
+    }
+
+
+    private void deleteNote() {
+
+        fNotesDatabase.child(noteID).removeValue().addOnCompleteListener(new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(@NonNull Task<Void> task) {
+                if (task.isSuccessful()) {
+                    Toast.makeText(NewNoteActivity.this, "Note Deleted", Toast.LENGTH_SHORT).show();
+                    noteID = "no";
+                    finish();
+                } else {
+                    Log.e("NewNoteActivity", task.getException().toString());
+                    Toast.makeText(NewNoteActivity.this, "ERROR: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+    }
+
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        String title = eTitle.getText().toString().trim();
+        String content = eContent.getText().toString().trim();
+        if (!TextUtils.isEmpty(title) && !TextUtils.isEmpty(content)) {
+            createNote(title, content);
+        }
+    }
+
+
+    private void runTextRecognition() {
+        FirebaseVisionImage image = null;
+        try {
+            image = FirebaseVisionImage.fromFilePath(getApplicationContext(),imageUri);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        FirebaseVisionTextRecognizer detector = FirebaseVision.getInstance()
+                .getOnDeviceTextRecognizer();
+        detector.processImage(image)
+                .addOnSuccessListener(
+                        new OnSuccessListener<FirebaseVisionText>() {
+                            @Override
+                            public void onSuccess(FirebaseVisionText texts) {
+
+                                processTextRecognitionResult(texts);
+                            }
+                        })
+                .addOnFailureListener(
+                        new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                // Task failed with an exception
+
+                                e.printStackTrace();
+                            }
+                        });
+    }
+
+    private void processTextRecognitionResult(FirebaseVisionText texts) {
+        List<FirebaseVisionText.TextBlock> blocks = texts.getTextBlocks();
+        if (blocks.size() == 0) {
+            showToast("No text found");
+            return;
+        }
+
+        mRecognizedText = texts.getText().toString();
+        eContent.setText(mRecognizedText);
+
+    }
+
+    private void showToast(String message) {
+        Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+    }
+
+
+    private void shareNote()
+    {
+        Intent sharingIntent = new Intent(android.content.Intent.ACTION_SEND);
+        sharingIntent.setType("text/plain");
+        sharingIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, "Subject Here");
+        sharingIntent.putExtra(android.content.Intent.EXTRA_TEXT, eContent.getText().toString());
+        startActivity(Intent.createChooser(sharingIntent, "Share via" ));
+    }
+
+
+
+    private void createReminder()
+    {
+
     }
 
 

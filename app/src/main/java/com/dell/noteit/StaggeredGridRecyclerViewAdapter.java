@@ -1,4 +1,4 @@
-package com.dell.noteit;
+/*package com.dell.noteit;
 
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -122,4 +122,4 @@ public class StaggeredGridRecyclerViewAdapter extends RecyclerView.Adapter<NoteV
 
 
 
-}
+}*/

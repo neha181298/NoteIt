@@ -6,36 +6,24 @@ import android.view.View;
 
 // Add space between RecyclerView items
 public class GridSpacingItemDecoration extends RecyclerView.ItemDecoration {
+    private int space;
 
-    private int spanCount;
-    private int spacing;
-    private boolean includeEdge;
-
-    public GridSpacingItemDecoration(int spanCount, int spacing, boolean includeEdge) {
-        this.spanCount = spanCount;
-        this.spacing = spacing;
-        this.includeEdge = includeEdge;
+    GridSpacingItemDecoration(int space) {
+        this.space = space;
     }
 
     @Override
-    public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
-        int position = parent.getChildAdapterPosition(view); // item position
-        int column = position % spanCount; // item column
+    public void getItemOffsets(Rect outRect, View view,
+                               RecyclerView parent, RecyclerView.State state) {
+        outRect.left = space;
+        outRect.right = space;
+        outRect.bottom = space;
 
-        if (includeEdge) {
-            outRect.left = spacing - column * spacing / spanCount; // spacing - column * ((1f / spanCount) * spacing)
-            outRect.right = (column + 1) * spacing / spanCount; // (column + 1) * ((1f / spanCount) * spacing)
-
-            if (position < spanCount) { // top edge
-                outRect.top = spacing;
-            }
-            outRect.bottom = spacing; // item bottom
+        // Add top margin only for the first item to avoid double space between items
+        if (parent.getChildLayoutPosition(view) == 0) {
+            outRect.top = space;
         } else {
-            outRect.left = column * spacing / spanCount; // column * ((1f / spanCount) * spacing)
-            outRect.right = spacing - (column + 1) * spacing / spanCount; // spacing - (column + 1) * ((1f /    spanCount) * spacing)
-            if (position >= spanCount) {
-                outRect.top = spacing; // item top
-            }
+            outRect.top = 0;
         }
     }
 }

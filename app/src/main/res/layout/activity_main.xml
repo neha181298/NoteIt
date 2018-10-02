@@ -9,21 +9,19 @@
 
 
     <ScrollView
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:layout_above="@+id/footer"
         android:fillViewport="true"
-        android:paddingTop="5dp"
-        android:paddingEnd="5dp"
-        android:paddingStart="5dp" >
+        android:paddingTop="2dp"
+        android:paddingEnd="2dp"
+        android:paddingStart="2dp" >
 
         <android.support.v7.widget.RecyclerView
             android:id="@+id/recycler_view"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:scrollbars="vertical"
-            android:orientation="vertical"
-            android:layout_margin="5dp"
+            android:layout_height="match_parent"
+            android:layout_margin="2dp"
             />
 
     </ScrollView>
@@ -53,21 +51,6 @@
                 android:background="?android:attr/selectableItemBackground"
                 android:text="@string/create_new_note" />
 
-            <ImageButton
-                android:id="@+id/create_new_checkbox_note"
-                android:layout_width="50dp"
-                android:layout_height="match_parent"
-                android:background="?android:attr/selectableItemBackground"
-                android:src="@drawable/ic_icon_list"
-                android:contentDescription="@string/checkbox_notes_button" />
-
-            <ImageButton
-                android:id="@+id/create_new_draw_note"
-                android:layout_width="50dp"
-                android:layout_height="match_parent"
-                android:background="?android:attr/selectableItemBackground"
-                android:src="@drawable/ic_icon_pen"
-                android:contentDescription="@string/draw_notes_button" />
 
             <ImageButton
                 android:id="@+id/create_new_micro_note"
