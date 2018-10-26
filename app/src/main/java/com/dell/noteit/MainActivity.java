@@ -2,6 +2,7 @@ package com.dell.noteit;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.ContentResolver;
@@ -67,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
     private final int REQ_CODE_CAMERA = 200,PERMISSION_REQUEST_CODE=300;
     private String voiceText;
     private ImageButton createVoiceNote;
-
+    private ProgressDialog dialog;
 
 
     @Override
@@ -75,6 +76,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        dialog = new ProgressDialog(this);
+        dialog.setTitle("Loading your notes..");
+        dialog.show();
         createNote = findViewById(R.id.create_new_note);
         createPhotoNote = findViewById(R.id.create_new_photo_note);
         createVoiceNote = findViewById(R.id.create_new_micro_note);
@@ -90,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
         createPhotoNote.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                
+
                 startActivityForResult(getPickImageChooserIntent(), REQ_CODE_CAMERA);
 
             }
@@ -105,14 +109,13 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
+
         mNotesList = (RecyclerView) findViewById(R.id.recycler_view);
 
         gridLayoutManager = new GridLayoutManager(this, 2, GridLayoutManager.VERTICAL, false);
 
         mNotesList.setHasFixedSize(true);
         mNotesList.setLayoutManager(gridLayoutManager);
-        //gridLayoutManager.setReverseLayout(true);
-        //gridLayoutManager.setStackFromEnd(true);
         final float scale = getResources().getDisplayMetrics().density;
         int spacing = (int) (1 * scale + 0.5f);
         mNotesList.addItemDecoration(new GridSpacingItemDecoration(spacing));
@@ -134,6 +137,9 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
 
     }
+
+
+
 
 
     @Override
@@ -178,11 +184,19 @@ public class MainActivity extends AppCompatActivity {
                 fNotesDatabase.child(noteId).addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
+                        if (dialog != null && dialog.isShowing()) {
+                            dialog.dismiss();
+                        }
                         if (dataSnapshot.hasChild("title") && dataSnapshot.hasChild("time")) {
                             String title = dataSnapshot.child("title").getValue().toString();
                             String timestamp = dataSnapshot.child("time").getValue().toString();
                             String content = dataSnapshot.child("content").getValue().toString();
                             String color = dataSnapshot.child("color").getValue().toString();
+                            if(dataSnapshot.hasChild("reminder time"))
+                            {
+                                if(dataSnapshot.child("reminder time").getValue()==null)
+                                    viewHolder.setReminderIcon();
+                            }
 
                             viewHolder.setNoteTitle(title);
                             viewHolder.setNoteContent(content);
@@ -213,7 +227,10 @@ public class MainActivity extends AppCompatActivity {
             }
         };
         mNotesList.setAdapter(firebaseRecyclerAdapter);
+
     }
+
+
     private void updateUI()
     {
         if(fAuth.getCurrentUser() != null)
@@ -223,6 +240,7 @@ public class MainActivity extends AppCompatActivity {
         }else
         {
             Intent startIntent = new Intent(MainActivity.this,StartActivity.class);
+            startIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);// clear back stack
             startActivity(startIntent);
             finish();
             Log.i("MainActivity","fAuth != null");

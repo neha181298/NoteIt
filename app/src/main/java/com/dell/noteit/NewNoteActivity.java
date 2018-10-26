@@ -1,6 +1,10 @@
 package com.dell.noteit;
 
 import android.annotation.SuppressLint;
+import android.app.AlarmManager;
+import android.app.Dialog;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -43,6 +47,8 @@ import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 
 import java.io.IOException;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -319,6 +325,7 @@ public class NewNoteActivity extends AppCompatActivity {
                     noteMap.put("content", content);
                     noteMap.put("time", ServerValue.TIMESTAMP);
                     noteMap.put("color", noteColor);
+                    noteMap.put("reminder time", null);
 
 
                     Thread mainThread = new Thread(new Runnable() {
@@ -473,8 +480,63 @@ public class NewNoteActivity extends AppCompatActivity {
 
     private void createReminder()
     {
+        new CustomDateTimePicker(this,
+                new CustomDateTimePicker.ICustomDateTimeListener() {
+                    @Override
+                    public void onSet(Dialog dialog, Calendar calendarSelected,
+                                      Date dateSelected, int year,
+                                      String monthFullName,
+                                      String monthShortName,
+                                      int monthNumber, int date,
+                                      String weekDayFullName,
+                                      String weekDayShortName, int hour24,
+                                      int hour12,
+                                      int min, int sec, String AM_PM) {
+
+                        showToast("Reminder set for "+calendarSelected.getTime().toString());
+                        setReminder(getApplicationContext(),ReminderReceiver.class,calendarSelected);
+                        if(fAuth.getCurrentUser()!=null)
+                        {
+                           fNotesDatabase.child(noteID).child("reminder time").setValue(calendarSelected.getTime().toString());
+                        }
+
+                    }
+
+                    @Override
+                    public void onCancel() {
+
+                    }
+                }).set24HourFormat(true).setDate(Calendar.getInstance())
+                .showDialog();
+    }
+
+    public void setReminder(Context context, Class<?> cls, Calendar calendar) {
+        Intent intent = new Intent(context, cls);
+        intent.putExtra("TIME", calendar.getTime().toString());
+        intent.putExtra("RequestCode", 10);
+        intent.putExtra("Note", eTitle.getText().toString());
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 10, intent,
+                PendingIntent.FLAG_ONE_SHOT);/* Find more about flags: https://developer.android.com/reference/android/app/PendingIntent */
+
+        AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        am.set(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);//Add time in milliseconds. if you want to minute or hour mutiply by 60.. For ex: You want to trigger 5 Min then here you need to change 5 * 60 * 1000
 
     }
 
 
-}
+    public void cancelReminder(Context context,Class<?> cls,Calendar calendar)
+    {
+        Intent intent1 = new Intent(context, cls);
+        intent1.putExtra("TIME", calendar.getTime().toString());
+        intent1.putExtra("RequestCode", 10);
+        intent1.putExtra("Note", eTitle.getText().toString());
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(context,
+                10, intent1, PendingIntent.FLAG_ONE_SHOT);
+        AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+
+        if(pendingIntent != null) {
+            am.cancel(pendingIntent);
+        }
+    }
+
+    }

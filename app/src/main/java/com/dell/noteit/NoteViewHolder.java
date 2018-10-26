@@ -2,6 +2,7 @@ package com.dell.noteit;
 
 
 import android.graphics.Color;
+import android.media.Image;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
@@ -14,6 +15,7 @@ public class NoteViewHolder extends RecyclerView.ViewHolder {
 
     TextView textTitle, textTime,textContent;
     CardView noteCard;
+    ImageView reminder;
 
     public NoteViewHolder(View itemView) {
         super(itemView);
@@ -24,6 +26,7 @@ public class NoteViewHolder extends RecyclerView.ViewHolder {
         textTime = mView.findViewById(R.id.note_timestamp);
         textContent= mView.findViewById(R.id.note_content);
         noteCard = mView.findViewById(R.id.card_view);
+        reminder = mView.findViewById(R.id.reminder_icon);
 
     }
 
@@ -44,5 +47,7 @@ public class NoteViewHolder extends RecyclerView.ViewHolder {
     public void setNoteTime(String time) {
         textTime.setText(time);
     }
+
+    public void setReminderIcon(){reminder.setVisibility(View.VISIBLE);}
 
 }

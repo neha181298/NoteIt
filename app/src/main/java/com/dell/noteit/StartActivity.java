@@ -48,6 +48,7 @@ public class StartActivity extends AppCompatActivity {
         if(mAuth.getCurrentUser() != null)
         {
             Intent startIntent = new Intent(StartActivity.this,MainActivity.class);
+            startIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);// clear back stack
             startActivity(startIntent);
             finish();
             Log.i("StartActivity","fAuth != null");
@@ -61,12 +62,14 @@ public class StartActivity extends AppCompatActivity {
     private void login()
     {
         Intent logIntent = new Intent(StartActivity.this,LoginActivity.class);
+        logIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);// clear back stack
         startActivity(logIntent);
     }
 
     private void register()
     {
         Intent regIntent = new Intent(StartActivity.this,RegisterActivity.class);
+        regIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);// clear back stack
         startActivity(regIntent);
     }
 }

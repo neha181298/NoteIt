@@ -60,6 +60,7 @@
                 android:maxLines="9"
                 android:padding="8dp" />
 
+
             <TextView
                 android:id="@+id/note_timestamp"
                 android:text="Time"
@@ -69,8 +70,22 @@
                 android:textColor="@color/colorBlack"
                 android:layout_height="wrap_content"
                 android:background="@color/colorNoteLightBlue"
-                android:maxLines="9"
-                android:padding="8dp" />
+                android:maxLines="1"
+                android:padding="8dp"
+                android:layout_alignParentRight="true"
+                >
+            </TextView>
+            <ImageView
+                android:id="@+id/reminder_icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/bell_ring"
+                android:layout_below="@id/note_content"
+                android:layout_alignParentRight="true"
+                android:layout_marginTop="10dp"
+                android:layout_marginRight="10dp"
+                android:visibility="invisible"
+                />
 
         </RelativeLayout>
 
